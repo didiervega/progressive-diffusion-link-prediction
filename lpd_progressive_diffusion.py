@@ -16,9 +16,9 @@ from multiprocessing import RawArray, Array
 
 from weave import inline
 import time
+
 #from memory_profiler import profile   
 #fp=open('memory_profilerPD.log','w+')
-
 #import pandas as pd
 #from scipy.stats import pearsonr, spearmanr
 #import LinkPredRun as lp
@@ -204,7 +204,6 @@ def get_progressive_diffusion_row(iDegree, neig, nodex, steps,node):
     
     
     N = np.int(len(iDegree)/2)
-    #M = nodex.size
     M = len(nodex)
 
     ItR = np.zeros([2*N,1],dtype=np.float32) 
@@ -299,9 +298,7 @@ def getProgressiveDiffusionScoreOPT(glist, beta, gamma, steps = maxSteps, probMa
     np.copyto(X_np, data) 
     del data
     
-    #y = np.ones((N,1),dtype=float)*9
-    #np.copyto(X_np[:,1],y.flatten())
-    
+   
     listW = list()    
     for i in xrange(N):        
         listW.append(i)                
@@ -400,13 +397,6 @@ def worker_job(lock, task_queue, result_list, result_listI, g, beta, gamma, step
                 #result_list.extend(resp)
     return True
 
-#def initStates(g):
-#    nodes = list(g.nodes())      
-#    state = dict()    
-#    state['I'] = {x:[float(0.0)] for x in nodes}        
-#    state['S'] = {x:[float(1.0)] for x in nodes}
-#    state['R'] = {x:[float(0.0)] for x in nodes}
-#    return state
 
 def initNumpyStates(g, nstates):
     n_nodes = len(g.nodes())      
@@ -417,34 +407,6 @@ def initNumpyStates(g, nstates):
     return state
     
     
-# =============================================================================
-# def p_getNegProbRumCp(g, iterator, beta, gamma):    
-#     nodes = g.nodes()              
-#     neg_Inf = {x:1.0 for x in nodes}     
-#     neg_Rec = {x:1.0 for x in nodes} 
-#                
-#     for i in nodes:
-#         neis = list(g[i])
-#         tInf = 1.0;
-#         tRec = 0.0;
-# 
-#         for nei in neis:    
-#             neiDegree = g.degree[nei]
-#             tInf = tInf*(1.0 - (beta/neiDegree)*iterator['I'][nei][-1])
-#             iDegree = g.degree[i]
-#             tRec +=  (gamma/iDegree)*(iterator['I'][nei][-1] + iterator['R'][nei][-1])
-#             
-#         neg_Inf[i] = tInf;
-#         neg_Rec[i] = 1 - tRec;
-# 
-#         #if neg_Rec[i] < 0.0 or neg_Inf[i] > 1.0:
-#         #    print("ERRO!!: neg_Rec[%d] %f OR neg_Inf[%d] %f overflow!\n\n", i, neg_Rec[i], i, neg_Inf[i])
-# 
-#     return neg_Inf, neg_Rec
-# 
-# =============================================================================
-    
-
 
 #TODO: DAVO: REfatorar usando weave e C. IMPLEMENTAR SEM GUARDAR TODOS OS STEPS E USANDO O NOVO
 def getNodeAnalyticDiffModelFunctionOLD(
@@ -482,56 +444,12 @@ def getNodeAnalyticDiffModelFunctionOLD(
     return iterator
 
 
-        
-# =============================================================================
-# def getNodeAnalyticDiffModel(g, node, beta, gamma):    
-#     nodes = g.nodes()
-#     
-#     #nx.diameter(g)
-# 
-#     iterator = initStates(g)
-#     #setting the unique node as initial spreader
-#     iterator['I'][node][0] = 1.0     
-#     iterator['S'][node][0] = 0.0 
-#         
-#     #tInfPast = 0.0
-#     #tInf = 0.01
-#     t = 1
-#  
-#     #while tInf > tInfPast:
-#     #    tInfPast = tInf
-#     
-#     while t < maxSteps:
-#             
-#         #TODO: PRE-CALCULAR OS VIZINHOS DE CADA VERTICE E PASSAR (neis)
-#         neg_Inf, neg_Rec = p_getNegProbRumCp(g, iterator, beta, gamma)
-#         
-#         #tInf = 0.0        
-#         
-#         for i in nodes:            
-#             iterator['S'][i].append(iterator['S'][i][t-1] * neg_Inf[i])
-#             iterator['I'][i].append(iterator['I'][i][t-1] * neg_Rec[i] + iterator['S'][i][t-1]*(1.0 - neg_Inf[i]))
-#             iterator['R'][i].append(iterator['R'][i][t-1] + iterator['I'][i][t-1]*(1.0 - neg_Rec[i]))
-#             #tInf += iterator['I'][i][t]
-#     
-#         t += 1    
-#     
-#     return iterator
-# 
-# =============================================================================
 
 
 def getProgressiveDiffusionStepsScore(g, beta, gamma, steps = maxSteps):    
     
     #degree = list(dict(g.degree).values())
-    nodes = g.nodes  
-    
-    #np.mean(degree)
-    #moment(degree, moment=2)
-    #beta = (np.mean(degree)/moment(degree, moment=2))*3
-    #gamma = 1.0
-    #steps = 16
-    
+    nodes = g.nodes      
     print('beta = ',beta)
     
     mgr = mp.Manager()
@@ -661,13 +579,7 @@ def processGmlFile(graphFile, graphFolder, beta, gamma):
         
         for li in xrange(0,2):
         
-            listM = [x[:,step] for x in matrixL[li]] 
-            #corr = np.triu(np.abs(np.corrcoef(listM)) - A)
-            #corr2 = np.triu(np.abs(np.corrcoef(listM, rowvar=False)) - A)  
-            
-            #nlinks, _  = getPredictedLinks(corr, m0)    
-            #nlinks2, _  = getPredictedLinks(corr2, m0)            
-               
+            listM = [x[:,step] for x in matrixL[li]]                
             RP_DF = np.triu(np.array(listM) + np.array(listM).transpose() - (A*10))
             RP_DF2 = np.triu(np.array(listM)/2 + np.array(listM).transpose()/2 - (A*10))
             
@@ -678,36 +590,22 @@ def processGmlFile(graphFile, graphFolder, beta, gamma):
             for factor in factors:
                 newM = int(math.floor(M*(factor)))            
         
-#                top = nlinks[0:newM]    
-#                GG = g.copy()            
-#                GG.add_edges_from(top)
-#                newFile = os.path.join(graphFolder, fileName[0] +"__"+cli[li]+"Pt"+str(step)+"-pRO" + str(factor).replace('.', '-') + "L"+lambdaP + fileName[1])
-#                nx.write_gml(GG, newFile)  
-#                
-#                top = nlinks2[0:newM]
-#                GG = g.copy()            
-#                GG.add_edges_from(top)
-#                newFile = os.path.join(graphFolder, fileName[0] +"__"+cli[li]+"Pt"+str(step)+"-pCO" + str(factor).replace('.', '-') + "L"+lambdaP + fileName[1])
-#                nx.write_gml(GG, newFile) 
-                
-        #a = np.arange(6).reshape(2,3) + 10
-        #ind = np.unravel_index(np.argmax(a, axis=None), a.shape)        
                 top = edges[0:newM]
                 GG = g.copy()            
                 GG.add_edges_from(top)
                 newFile = os.path.join(graphFolder, fileName[0] +"__"+cli[li]+"Pt"+str(step)+"-RPS" + str(factor).replace('.', '-') + "L"+lambdaP + fileName[1])
                 nx.write_gml(GG, newFile) 
                 
-                top = edges2[0:newM]
+                top2 = edges2[0:newM]
                 GG = g.copy()            
-                GG.add_edges_from(top)
+                GG.add_edges_from(top2)
                 newFile = os.path.join(graphFolder, fileName[0] +"__"+cli[li]+"Pt"+str(step)+"-RPA" + str(factor).replace('.', '-') + "L"+lambdaP + fileName[1])
                 nx.write_gml(GG, newFile) 
                 
-    #runOtherLP(g, fileName, graphFolder)
+
     print("FINISH2 ")
 
-
+    return top, top2
 
 
 
@@ -748,14 +646,14 @@ if __name__ == "__main__":
             print ('program.py <gml path+file > <folder path result > beta gamma')            
             sys.exit()
     
-    file = str(argv[0])
+    fileGml = str(argv[0])
     graphFolder = str(argv[1])
     beta = float(argv[2])
     gamma = float(argv[3])
-  #  file = graphFile = '.\\bases\\BA__10000-12.gml'
+  #  fileGml = graphFile = '.\\bases\\BA__10000-12.gml'
   #  graphFolder = '.\\bases'
   
-    #processGmlFile(file, graphFolder, beta, gamma)
+    processGmlFile(fileGml, graphFolder, beta, gamma)
     
     
     
